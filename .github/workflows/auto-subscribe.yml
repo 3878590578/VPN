@@ -22,7 +22,7 @@ jobs:
         run: npm install node-fetch@2
 
       - name: Run script
-        run: node vpn/main.js
+        run: node main.js
 
       - name: Commit subscribe link
         run: |
