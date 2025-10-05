@@ -1,5 +1,5 @@
 name: Auto Subscribe
-
+ 
 # 定时执行，每天 8 点
 on:
   schedule:
