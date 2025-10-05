@@ -1,63 +1,63 @@
-// main.js
-const fetch = require('node-fetch');
 const fs = require('fs');
-const path = require('path');
+const fetch = require('node-fetch');  // GitHub Actions 使用 node-fetch@2
 
-// 随机生成邮箱和密码
-function randomString(len){
-    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    return Array.from({length: len},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
-}
+(async () => {
+  try {
+    console.log("▶ 开始自动注册...");
 
-function randomPassword() {
-    return `${randomString(6)}-${randomString(6)}-${randomString(6)}`;
-}
+    // === 机场注册接口（请确保此处地址正确）===
+    const registerUrl = "https://cn4.newbee888.cc/api/v1/passport/auth/register";
+    const email = `vpn_${Date.now()}@gmail.com`;
+    const password = "abc123456";
 
-async function main() {
-    const email = randomString(8) + "@gmail.com";
-    const password = randomPassword();
-
-    console.log("🟦 注册账号：", email, password);
-
-    // 注册
-    const regResp = await fetch("https://cn4.newbee888.cc/api/v1/passport/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&invite_code=&email_code=`
+    // === 注册账号 ===
+    const registerRes = await fetch(registerUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" }，
+      body: JSON。stringify({
+        email，
+        password,
+        invite_code: "",
+        email_code: ""
+      }),
     });
 
-    const regData = await regResp.json();
+    const registerData = await registerRes。json();
+    console。log("注册返回："， registerData);
 
-    let token = regData?.data?.auth_data || regData?.data?.token;
-    if(!token){
-        console.log("❌ 未能获取 token", regData);
-        return;
-    }
-    console.log("✅ 获取 token:", token);
-
-    // 延迟 2 秒再请求订阅，防止接口未激活
-    await new Promise(r => setTimeout(r, 2000));
-
-    // 获取订阅链接
-    const subResp = await fetch("https://cn4.newbee888.cc/api/v1/user/getSubscribe", {
-        method: "GET",
-        headers: { "authorization": token }
-    });
-
-    const subData = await subResp.json();
-    let subscribeUrl = subData?.data?.subscribe_url?.replace(/\\/g,"");
-
-    if(!subscribeUrl){
-        console.log("❌ 未能获取订阅链接", subData);
-        return;
+    if (!registerData?.data?.auth_data?.token) {
+      throw new 错误("注册失败，未返回 token");
     }
 
-    console.log("✅ 订阅链接:", subscribeUrl);
+    const token = registerData.data.auth_data.token;
+    console.log("✅ 获取到 token:", token);
 
-    // 保存订阅链接到仓库文件
-    const filePath = path.join(__dirname, 'subscribe_url.txt');
-    fs.writeFileSync(filePath, subscribeUrl, { encoding: 'utf-8' });
-    console.log("✅ 已保存订阅链接到", filePath);
-}
+    // === 获取订阅链接 ===
+    const subUrl = `https://cn4.newbee888.cc/api/v1/client/subscribe?token=${token}`;
+    console.log("✅ 订阅链接:", subUrl);
 
-main().catch(err => console.error(err));
+    // === 下载原始订阅内容 ===
+    console.log("▶ 获取订阅内容中...");
+    const subRes = await fetch(subUrl);
+    if (!subRes.ok) throw new Error("获取订阅失败，HTTP状态码: " + subRes.status);
+    const subContent = await subRes.text();
+
+    // === Base64 编码 ===
+    const base64Content = Buffer.from(subContent).toString('base64');
+
+    // === 写入文件 ===
+    fs.writeFileSync("subscribe_url.txt", base64Content);
+
+    console.log(`
+──────────────
+🚀 订阅更新成功！
+直接导入 Clash / Surge / Loon：
+https://raw.githubusercontent.com/3878590578/vpn/main/subscribe_url.txt
+──────────────
+`);
+
+  } catch (err) {
+    console.error("❌ 出错了:", err.message);
+    process.exit(1);
+  }
+})();
