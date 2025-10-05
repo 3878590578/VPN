@@ -23,7 +23,7 @@ jobs:
     - name: Run Register Script
       run: |
         echo "▶ 运行 Scriptable 注册脚本..."
-        node "vpn/main.js" > subscribe_url.txt
+        node "main.js" > subscribe_url.txt
         echo "✅ 注册完成，以下为订阅链接："
         cat subscribe_url.txt
 
