@@ -1,34 +1,33 @@
-name: Auto Subscribe
+name: Auto Update VPN Subscribe
 
 on:
   schedule:
-    - cron: "0 */3 * * *"  # 每3小时自动运行
-  workflow_dispatch:
+    - cron: "0 */3 * * *"  # 每3小时执行一次
+  workflow_dispatch:       # 手动运行按钮
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 检出仓库
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: 设置 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: 安装依赖
-        run: npm install node-fetch@2 axios
+      - name: Install dependencies
+        run: npm install
 
-      - name: 运行自动注册脚本
+      - name: Run Scriptable register script
         run: node main.js
 
-      - name: 提交更新
+      - name: Commit & Push results
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add subscribe_url.txt
-          git commit -m "更新订阅链接 $(date '+%Y-%m-%d %H:%M:%S')" || echo "没有变化"
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
           git pull --rebase
+          git add subscribe_url.txt
+          git commit -m "Auto update subscribe link $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes"
           git push
