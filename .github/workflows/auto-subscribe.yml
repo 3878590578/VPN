@@ -1,52 +1,40 @@
-name: Auto Register & Update Subscription
+name: Auto Subscribe
 
 on:
   schedule:
-    - cron: "0 */3 * * *"   # ✅ 每3小时运行一次
-  workflow_dispatch:        # 手动运行也支持
+    - cron: "0 */3 * * *"  # 每3小时自动运行一次
+  workflow_dispatch:       # 可手动触发
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0   # ✅ 拉取完整历史，防止 push 冲突
+      - name: 检出仓库
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
 
-    - name: Run Register Script
-      run: |
-        echo "▶ 运行 Scriptable 注册脚本..."
-        node "main.js" > subscribe_url.txt
-        echo "✅ 注册完成，以下为订阅链接："
-        cat subscribe_url.txt
+      - name: 安装依赖
+        run: |
+          npm install axios fs path
 
-    - name: Download Subscription File
-      run: |
-        echo "▶ 正在下载订阅文件..."
-        URL=$(cat subscribe_url.txt)
-        if [ -z "$URL" ]; then
-          echo "❌ 未获取到订阅链接"
-          exit 1
-        fi
-        curl -sL "$URL" -o subscribe.txt
-        echo "✅ 已保存为 subscribe.txt"
+      - name: 运行 Scriptable 注册脚本
+        run: node main.js
 
-    - name: Commit & Push Changes
-      env:
-        TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        echo "▶ 提交更新..."
-        git config user.name "github-actions"
-        git config user.email "actions@github.com"
-        git pull origin main --rebase  # ✅ 拉取远程最新版本，防止冲突
-        git add subscribe.txt
-        git commit -m "Auto update subscribe $(date +'%Y-%m-%d %H:%M:%S')" || echo "⚠️ 没有变化"
-        git push "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git"
-        echo "✅ 推送完成"
+      - name: 上传订阅文件
+        uses: actions/upload-artifact@v4
+        with:
+          name: subscribe_url
+          path: subscribe_url.txt
+
+      - name: 提交变更
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add subscribe_url.txt
+          git commit -m "更新订阅链接 $(date '+%Y-%m-%d %H:%M:%S')" || echo "没有变化"
+          git push
