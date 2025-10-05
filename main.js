@@ -1,11 +1,11 @@
 const fs = require('fs');
-const fetch = require('node-fetch');  // GitHub Actions 使用 node-fetch@2
+const fetch = require('node-fetch'); // GitHub Actions 使用 node-fetch@2
 
 (async () => {
   try {
     console.log("▶ 开始自动注册...");
 
-    // === 机场注册接口（请确保此处地址正确）===
+    // === 机场注册接口 ===
     const registerUrl = "https://cn4.newbee888.cc/api/v1/passport/auth/register";
     const email = `vpn_${Date.now()}@gmail.com`;
     const password = "abc123456";
@@ -14,29 +14,29 @@ const fetch = require('node-fetch');  // GitHub Actions 使用 node-fetch@2
     const registerRes = await fetch(registerUrl, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON。stringify({
-        email，
-        password,
-        invite_code: "",
+      body: JSON.stringify({
+        email,
+        password，
+        invite_code: ""，
         email_code: ""
       }),
     });
 
-    const registerData = await registerRes。json();
-    console。log("注册返回："， registerData);
+    const registerData = await registerRes.json();
+    console.log("注册返回："， registerData);
 
-    if (!registerData?.data?.auth_data?.token) {
-      throw new 错误("注册失败，未返回 token");
+    const token = registerData?.data?.token || registerData?.data?.auth_data?.token;
+    if (!token) {
+      throw new Error("注册失败，未返回 token");
     }
 
-    const token = registerData.data.auth_data.token;
     console.log("✅ 获取到 token:", token);
 
     // === 获取订阅链接 ===
     const subUrl = `https://cn4.newbee888.cc/api/v1/client/subscribe?token=${token}`;
     console.log("✅ 订阅链接:", subUrl);
 
-    // === 下载原始订阅内容 ===
+    // === 获取订阅内容 ===
     console.log("▶ 获取订阅内容中...");
     const subRes = await fetch(subUrl);
     if (!subRes.ok) throw new Error("获取订阅失败，HTTP状态码: " + subRes.status);
