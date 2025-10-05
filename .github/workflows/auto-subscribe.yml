@@ -2,8 +2,8 @@ name: Auto Register & Update Subscription
 
 on:
   schedule:
-    - cron: "0 */3 * * *"   # 每3小时执行一次
-  workflow_dispatch:        # 允许手动触发
+    - cron: "0 */3 * * *"   # ✅ 每3小时运行一次
+  workflow_dispatch:        # 手动运行也支持
 
 jobs:
   build:
@@ -13,7 +13,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
       with:
-        fetch-depth: 0  # ✅ 拉取完整提交历史
+        fetch-depth: 0   # ✅ 拉取完整历史，防止 push 冲突
 
     - name: Setup Node.js
       uses: actions/setup-node@v3
@@ -22,17 +22,17 @@ jobs:
 
     - name: Run Register Script
       run: |
-        echo "▶ 运行注册脚本..."
+        echo "▶ 运行 Scriptable 注册脚本..."
         node "vpn/main.js" > subscribe_url.txt
-        echo "✅ 生成订阅链接如下："
+        echo "✅ 注册完成，以下为订阅链接："
         cat subscribe_url.txt
 
     - name: Download Subscription File
       run: |
-        echo "▶ 开始下载订阅文件..."
+        echo "▶ 正在下载订阅文件..."
         URL=$(cat subscribe_url.txt)
         if [ -z "$URL" ]; then
-          echo "❌ 未能获取到订阅链接"
+          echo "❌ 未获取到订阅链接"
           exit 1
         fi
         curl -sL "$URL" -o subscribe.txt
@@ -42,14 +42,11 @@ jobs:
       env:
         TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        echo "▶ 准备提交更新..."
+        echo "▶ 提交更新..."
         git config user.name "github-actions"
         git config user.email "actions@github.com"
-
-        # ✅ 关键一步：拉取最新版本，防止 push 冲突
-        git pull origin main --rebase || true
-
+        git pull origin main --rebase  # ✅ 拉取远程最新版本，防止冲突
         git add subscribe.txt
-        git commit -m "Update subscribe link $(date +'%Y-%m-%d %H:%M:%S')" || echo "⚠️ 没有变化"
-        git push "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git" main
+        git commit -m "Auto update subscribe $(date +'%Y-%m-%d %H:%M:%S')" || echo "⚠️ 没有变化"
+        git push "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git"
         echo "✅ 推送完成"
