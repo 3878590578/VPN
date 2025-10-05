@@ -49,13 +49,13 @@ const fetch = require('node-fetch'); // Node.js 18 需用 node-fetch@2
 
     // === 最终再编码一次以保存 ===
     const finalBase64 = Buffer.from(decoded).toString('base64');
-    fs.writeFileSync("subscribe_url.txt", finalBase64);
+    fs.writeFileSync("newbee888.txt", finalBase64);
 
     console.log(`
 ──────────────
 🚀 订阅更新成功！
 直接导入 Clash / Surge / Loon：
-https://raw.githubusercontent.com/3878590578/vpn/main/subscribe_url.txt
+https://raw.githubusercontent.com/3878590578/vpn/main/newbee888.txt
 ──────────────
 `);
 
