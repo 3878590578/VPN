@@ -1,33 +1,49 @@
-name: Auto Subscribe
- 
-# 定时执行，每天 8 点
-on:
+name: Auto Register & Update Subscription
+
+于:
   schedule:
-    - cron: "0 8 * * *" 
-  workflow_dispatch:  # 允许手动触发
+    - cron: "0 */3 * * *"   # ✅ 每3小时运行一次
+  workflow_dispatch:        # 手动运行也支持
 
 jobs:
-  subscribe:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
 
-      - name: Install dependencies
-        run: npm install node-fetch@2
+    - name: Run Register Script
+      run: |
+        echo "▶ 运行 Scriptable 注册脚本..."
+        node "vpn/main.js" > subscribe_url.txt
+        echo "✅ 注册完成，以下为订阅链接："
+        cat subscribe_url.txt
 
-      - name: Run script
-        run: node main.js
+    - name: Download Subscription File
+      run: |
+        echo "▶ 正在下载订阅文件..."
+        URL=$(cat subscribe_url.txt)
+        if [ -z "$URL" ]; then
+          echo "❌ 未获取到订阅链接"
+          exit 1
+        fi
+        curl -sL "$URL" -o subscribe.txt
+        echo "✅ 已保存为 subscribe.txt"
 
-      - name: Commit subscribe link
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add subscribe_url.txt
-          git commit -m "Update subscribe link $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
-          git push
+    - name: Commit & Push Changes
+      env:
+        TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "▶ 提交更新..."
+        git config user.name "github-actions"
+        git config user.email "actions@github.com"
+        git add subscribe.txt
+        git commit -m "Auto update subscribe $(date +'%Y-%m-%d %H:%M:%S')" || echo "⚠️ 没有变化"
+        git push "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git"
+        echo "✅ 推送完成"
