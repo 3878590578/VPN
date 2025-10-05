@@ -2,8 +2,8 @@ name: Auto Subscribe
 
 on:
   schedule:
-    - cron: "0 */3 * * *"  # 每3小时自动运行一次
-  workflow_dispatch:       # 可手动触发
+    - cron: "0 */3 * * *"  # 每3小时自动运行
+  workflow_dispatch:
 
 jobs:
   build:
@@ -19,22 +19,16 @@ jobs:
           node-version: 18
 
       - name: 安装依赖
-        run: |
-          npm install node-fetch@2 axios
+        run: npm install node-fetch@2 axios
 
-      - name: 运行 Scriptable 注册脚本
+      - name: 运行自动注册脚本
         run: node main.js
 
-      - name: 上传订阅文件
-        uses: actions/upload-artifact@v4
-        with:
-          name: subscribe_url
-          path: subscribe_url.txt
-
-      - name: 提交变更
+      - name: 提交更新
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add subscribe_url.txt
           git commit -m "更新订阅链接 $(date '+%Y-%m-%d %H:%M:%S')" || echo "没有变化"
+          git pull --rebase
           git push
