@@ -13,7 +13,7 @@ const fetch = require('node-fetch');  // GitHub Actions 使用 node-fetch@2
     // === 注册账号 ===
     const registerRes = await fetch(registerUrl, {
       method: "POST",
-      headers: { "content-type": "application/json" }，
+      headers: { "content-type": "application/json" },
       body: JSON。stringify({
         email，
         password,
