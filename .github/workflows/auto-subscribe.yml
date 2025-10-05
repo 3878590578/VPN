@@ -28,7 +28,7 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           # 把本地变更先加到暂存区
-          git add subscribe_url.txt
+          git add newbee888.txt
           # 允许空提交，没有变化时直接跳过
           git diff --cached --quiet && echo "No changes to commit" && exit 0
           git commit -m "Auto update subscribe link $(date +'%Y-%m-%d %H:%M:%S')"
