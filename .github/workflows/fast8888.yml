@@ -1,33 +1,36 @@
-name: Fetch Fast8888 Subscribe
+name: fast8888
 
 on:
-  workflow_dispatch:  # 手动触发
-  schedule:          # 定时触发，每天凌晨 0 点
-    - cron: '0 0 * * *'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'   # 每天 UTC 0 点
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout Repo
-      uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: "18"
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
 
-    - name: Install Dependencies
-      run: npm install node-fetch
+      - name: Install deps
+        run: npm ci          # 利用现有 package.json + package-lock
 
-    - name: Run Script
-      run: node fast8888.js
+      - name: Run fast8888.js
+        env:
+          EMAIL:    ${{ secrets.EMAIL }}
+          PASSWORD: ${{ secrets.PASSWORD }}
+          INVITE_CODE: ${{ secrets.INVITE_CODE }}
+        run: node fast8888.js
 
-    - name: Commit subscribe.txt
-      run: |
-        git config user.name "github-actions"
-        git config user.email "github-actions@users.noreply.github.com"
-        git add subscribe.txt
-        git commit -m "更新订阅链接 $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes"
-        git push
+      - name: Commit & push fast8888.txt
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add fast8888.txt
+          git diff --cached --quiet || (git commit -m "update fast8888.txt $(date -Iseconds)" && git push)
