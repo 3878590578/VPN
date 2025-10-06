@@ -2,13 +2,12 @@ name: Auto Update BYIJSQ Subscribe
 
 on:
   schedule:
-    - cron: "0 */3 * * *"  # 每3小时执行一次
-  workflow_dispatch:       # 可手动触发
+    - cron: "0 */3 * * *"  # 每3小时自动运行
+  workflow_dispatch:       # 手动运行
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -19,22 +18,21 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
-        run: npm install node-fetch@2
+        run: npm install node-fetch@2 cheerio
 
       - name: Run registration script
         run: node byijsq.js
 
-      - name: Commit & Push results
+      - name: Commit & Push YAML
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          
-          # 如果文件存在才添加
-          if [ -f "sub.txt" ]; then
-            git add sub.txt
+
+          if [ -f "byijsq.yaml" ]; then
+            git add byijsq.yaml
             git diff --cached --quiet && echo "No changes to commit" && exit 0
             git commit -m "Auto update BYIJSQ $(date +'%Y-%m-%d %H:%M:%S')"
             git push
           else
-            echo "❌ 没找到 sub.txt，可能注册或提取失败"
+            echo "❌ 没找到 byijsq.yaml，可能注册或提取失败"
           fi
