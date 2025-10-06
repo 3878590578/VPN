@@ -1,28 +1,28 @@
 #!/usr/bin/env node
 /**
- * 自动注册/登录并拉取 fast8888 订阅链接
- * 环境变量：EMAIL、PASSWORD、INVITE_CODE(可选)
- * 输出文件：fast8888.txt（与脚本同名）
+ * 完全随机注册并拉取 fast8888 订阅
+ * 输出：fast8888.txt
  */
 const fs   = require("fs");
 const path = require("path");
-const fetch = require("node-fetch");
+const crypto = require("crypto");
+const fetch  = require("node-fetch");
 
-const EMAIL       = process.env.EMAIL;
-const PASSWORD    = process.env.PASSWORD;
-const INVITE_CODE = process.env.INVITE_CODE || "";
-const OUT_FILE    = path.join(__dirname, "fast8888.txt");
+const OUT_FILE = path.join(__dirname， "fast8888.txt");
 
-if (!EMAIL || !PASSWORD) {
-  console.error("❌ 请设置 secrets.EMAIL 和 secrets.PASSWORD");
-  process.exit(1);
-}
+/* ---------- 工具 ---------- */
+const randStr = (len = 12) => crypto。randomBytes(len)。toString('base64url').slice(0, len);
+const email   = `${crypto.randomUUID()}@tmpmail.cn`;
+const password= randStr(16);
 
+/* ---------- 主流程 ---------- */
 (async () => {
   try {
-    // 1. 注册（已存在会 400，忽略即可）
-    const regOK = await register(EMAIL, PASSWORD, INVITE_CODE);
-    if (!regOK) console.log("⚠️  注册跳过，可能已存在");
+    console.log(`🚀 随机注册：${email} / ${password}`);
+
+    // 1. 注册
+    const regOK = await register(email, password);
+    if (!regOK) console.log("⚠️  注册未成功，继续尝试获取订阅");
 
     // 2. 拿订阅
     const url = await getSubscribe();
@@ -38,11 +38,11 @@ if (!EMAIL || !PASSWORD) {
 })();
 
 /* ---------- 业务函数 ---------- */
-async function register(email, pwd, invite) {
+async function register(email, pwd) {
   const params = new URLSearchParams({
     email,
     password: pwd,
-    invite_code: invite,
+    invite_code: "",
     email_code: ""
   });
   const res = await fetch("http://panel.fast8888.com/api/v1/passport/auth/register", {
