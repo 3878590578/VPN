@@ -1,28 +1,40 @@
-name: Auto BYIJSQ
+name: Auto Update BYIJSQ Subscribe
 
 on:
   schedule:
-    - cron: "0 */3 * * *"  # 每3小时运行
-  workflow_dispatch:
+    - cron: "0 */3 * * *"  # 每3小时执行一次
+  workflow_dispatch:       # 可手动触发
 
 jobs:
-  run:
+  build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Setup Node
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - name: Run Script
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install node-fetch@2
+
+      - name: Run registration script
+        run: node byijsq.js
+
+      - name: Commit & Push results
         run: |
-          npm install node-fetch@3
-          node byijsq.js
-      - name: Commit result
-        run: |
-          git config --global user.email "bot@example.com"
-          git config --global user.name "GitHub Bot"
-          git add sub.txt
-          git commit -m "update subscription"
-          git push
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          
+          # 如果文件存在才添加
+          if [ -f "sub.txt" ]; then
+            git add sub.txt
+            git diff --cached --quiet && echo "No changes to commit" && exit 0
+            git commit -m "Auto update BYIJSQ $(date +'%Y-%m-%d %H:%M:%S')"
+            git push
+          else
+            echo "❌ 没找到 sub.txt，可能注册或提取失败"
+          fi
