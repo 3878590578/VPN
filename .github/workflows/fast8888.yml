@@ -12,11 +12,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: 'npm'
+      - - name: Setup Node
+  uses: actions/setup-node@v4
+  with:
+    node-version: 18
+    # cache: 'npm'   # 先注释掉
+
 
       - name: Install deps
         run: npm ci          # 利用现有 package.json + package-lock
