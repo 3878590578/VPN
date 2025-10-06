@@ -31,16 +31,21 @@ const USER_PAGE   = `${BASE}/user`;
     const regText = await regRes.text();
     console.log('🟢 注册响应:', regText.slice(0, 100));
 
-    // 2. 登录
-    const loginRes = await fetch(LOGIN_API, {
-      method : 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body   : new URLSearchParams({ email, passwd: password }).toString(),
-      redirect: 'manual'
-    });
-    const cookie = loginRes.headers.get('set-cookie');
-    if (!cookie) throw new Error('❌ 登录未返回 cookie');
-    console.log('🍪 登录成功');
+  
+    // 2. 登录 → 允许跳转，并拼接完整 cookie
+const loginRes = await fetch(LOGIN_API, {
+  method : 'POST'，
+  headers: { 'content-type': 'application/x-www-form-urlencoded' }，
+  body   : new URLSearchParams({ email, passwd: password }).toString(),
+  redirect: 'follow'          // ← 关键：跟随 302
+});
+
+// 从最终响应里拿 cookie
+const cookie = loginRes.headers.raw()['set-cookie']          // node-fetch v2 写法
+               ?.map(c => c.split(';')[0])                   // 只留 key=value
+               .join('; ');
+if (!cookie) throw new Error('❌ 登录后无 cookie');
+console.log('🍪 登录成功，cookie:', cookie);
 
     // 3. 用户中心 → 先保存调试文件
 const userRes = await fetch(USER_PAGE, { headers: { cookie } });
