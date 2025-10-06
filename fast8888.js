@@ -18,7 +18,9 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 /* ---------- 工具 ---------- */
 const randStr = (len = 16) => crypto.randomBytes(len).toString('base64url').slice(0, len);
 
-const randMail= () => ${crypto.randomUUID().replace(/-/g, '')}${MAIL_POOL[Math.floor(Math.random() * MAIL_POOL.length)]};
+const randMail = () =>
+  `${crypto.randomUUID().replace(/-/g, '')}${MAIL_POOL[Math.floor(Math.random() * MAIL_POOL.length)]}`;
+
 const sleep   = (ms) => new Promise(r => setTimeout(r, ms));
 /* ---------- 主流程 ---------- */
 (async () => {
