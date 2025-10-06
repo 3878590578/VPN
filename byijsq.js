@@ -42,15 +42,26 @@ const USER_PAGE   = `${BASE}/user`;
     if (!cookie) throw new Error('❌ 登录未返回 cookie');
     console.log('🍪 登录成功');
 
-    // 3. 用户中心 → 提取 Clash 订阅
-    const userRes = await fetch(USER_PAGE, { headers: { cookie } });
-    const html    = await userRes.text();
-    const $       = cheerio.load(html);
+    // 3. 用户中心 → 先保存调试文件
+const userRes = await fetch(USER_PAGE, { headers: { cookie } });
+const html = await userRes.text();
+fs.writeFileSync('debug_user.html', html);          // ← 新增
+console.log('📄 已保存 debug_user.html，前 3000 字符：', html.slice(0, 3000));
 
-    // 重点：从按钮属性里拿 Clash 订阅
-    const subLink = $('button[data-clipboard-text*="clash=1"]').attr('data-clipboard-text');
-    if (!subLink) throw new Error('❌ 未找到 Clash 订阅链接');
-    console.log('🔗 订阅链接:', subLink);
+const $ = cheerio.load(html);
+
+// ① 尝试自动提取
+let subLink = $('button[data-clipboard-text*="clash=1"]').attr('data-clipboard-text');
+
+// ② 如果提取不到，用写死的临时链接（把 XXXX 换成你手动复制的）
+if (!subLink) {
+  subLink = 'https://ozwhvroaxw7x8y8osqg.gym-gpt.com/link/XXXX?clash=1';
+  console.log('⚠️  未找到按钮，使用手动链接');
+}
+
+if (!subLink) throw new Error('❌ 仍无订阅链接');
+console.log('🔗 订阅链接:', subLink);
+
 
     // 4. 拉取订阅内容
     const subRes  = await fetch(subLink, { headers: { cookie } });
