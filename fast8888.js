@@ -10,11 +10,7 @@ const fetch  = require("node-fetch");
 
 const OUT_FILE = path.join(__dirname, "fast8888.txt");
 const RETRY    = 3;
-const MAIL_POOL= [               // 主流域名，降低一次性邮箱特征
-  '@gmail.com',
-  '@outlook.com',
-  '@proton.me'
-];
+const MAIL_POOL = ['@gmail.com'];   // 只留 Gmail,免验证
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
 /* ---------- 工具 ---------- */
