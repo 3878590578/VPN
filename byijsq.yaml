@@ -1,7 +1,7 @@
-#!MANAGED-CONFIG https://byijsq.com/link/5S1quMfhKj5zRSNl?clash=1
+#!MANAGED-CONFIG https://byijsq.com/link/roIYsywI4YhLUvyV?clash=1
 
 #---------------------------------------------------#
-## 上次更新于：2025-10-07 02:28:41
+## 上次更新于：2025-10-07 05:16:39
 #---------------------------------------------------#
 
 port: 7890
@@ -18,7 +18,7 @@ proxies:
     type: vmess
     server: g4bk7yx3nd5q.byijsq.com
     port: 20101
-    uuid: 76710196-09aa-3864-805b-8ffaaec6d3eb
+    uuid: 1fa0e49f-9c91-3faf-9493-cc25331bd87e
     alterId: 0
     cipher: auto
     udp: true
@@ -28,7 +28,7 @@ proxies:
     type: vmess
     server: g4bk7yx3nd5q.byijsq.com
     port: 27605
-    uuid: 76710196-09aa-3864-805b-8ffaaec6d3eb
+    uuid: 1fa0e49f-9c91-3faf-9493-cc25331bd87e
     alterId: 0
     cipher: auto
     udp: true
@@ -38,7 +38,7 @@ proxies:
     type: vmess
     server: g4bk7yx3nd5q.byijsq.com
     port: 20103
-    uuid: 76710196-09aa-3864-805b-8ffaaec6d3eb
+    uuid: 1fa0e49f-9c91-3faf-9493-cc25331bd87e
     alterId: 0
     cipher: auto
     udp: true
@@ -48,7 +48,7 @@ proxies:
     type: vmess
     server: g4bk7yx3nd5q.byijsq.com
     port: 20106
-    uuid: 76710196-09aa-3864-805b-8ffaaec6d3eb
+    uuid: 1fa0e49f-9c91-3faf-9493-cc25331bd87e
     alterId: 0
     cipher: auto
     udp: true
