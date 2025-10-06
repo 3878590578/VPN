@@ -8,12 +8,12 @@ const path = require("path");
 const crypto = require("crypto");
 const fetch  = require("node-fetch");
 
-const OUT_FILE = path.join(__dirname， "fast8888.txt");
+const OUT_FILE = path.join(__dirname, "fast8888.txt");
 
 /* ---------- 工具 ---------- */
-const randStr = (len = 12) => crypto。randomBytes(len)。toString('base64url').slice(0, len);
+const randStr = (len = 12) => crypto.randomBytes(len).toString('base64url').slice(0, len);
 const email   = `${crypto.randomUUID()}@tmpmail.cn`;
-const password= randStr(16);
+const password = randStr(16);
 
 /* ---------- 主流程 ---------- */
 (async () => {
