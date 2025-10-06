@@ -1,0 +1,19 @@
+name: Fix all punct
+on:
+  workflow_dispatch:   # 手动按钮
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 一键修复全角 & 反引号
+        run: |
+          chmod +x fix-all.sh
+          ./fix-all.sh
+      - name: 提交结果
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add fast8888.js
+          git diff --cached --quiet || (git commit -m "fix all punct" && git push)
