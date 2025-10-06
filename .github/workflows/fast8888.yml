@@ -3,34 +3,26 @@ name: fast8888
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'   # 每天 UTC 0 点
+    - cron: '0 0 * * *'
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
-          # cache: 'npm'   # 有 lock 文件后再放开
+          # cache: 'npm'
 
-      - name: Install deps
-        run: npm ci
+      - run: npm ci
 
-      - name: Run fast8888.js
-        env:
-          EMAIL:       ${{ secrets.EMAIL }}
-          PASSWORD:    ${{ secrets.PASSWORD }}
-          INVITE_CODE: ${{ secrets.INVITE_CODE }}
-        run: node fast8888.js
+      - run: node fast8888.js
 
-      - name: Commit & push fast8888.txt
+      - name: commit & push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add fast8888.txt
-          git diff --cached --quiet || (git commit -m "update fast8888.txt $(date -Iseconds)" && git push)
+          git diff --cached --quiet || (git commit -m "auto subscribe $(date -Iseconds)" && git push)
