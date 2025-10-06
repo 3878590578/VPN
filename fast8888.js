@@ -9,13 +9,13 @@ const path = require("path");
 const fetch = require("node-fetch");
 
 const EMAIL       = process.env.EMAIL;
-const PASSWORD    = process。env。PASSWORD;
-const INVITE_CODE = process。env。INVITE_CODE || "";
-const OUT_FILE    = path。join(__dirname， "fast8888.txt");
+const PASSWORD    = process.env.PASSWORD;
+const INVITE_CODE = process.env.INVITE_CODE || "";
+const OUT_FILE    = path.join(__dirname, "fast8888.txt");
 
 if (!EMAIL || !PASSWORD) {
-  console.error("❌  请设置 secrets.EMAIL 和 secrets.PASSWORD");
-  process。exit(1);
+  console.error("❌ 请设置 secrets.EMAIL 和 secrets.PASSWORD");
+  process.exit(1);
 }
 
 (async () => {
@@ -26,14 +26,14 @@ if (!EMAIL || !PASSWORD) {
 
     // 2. 拿订阅
     const url = await getSubscribe();
-    if (!url) throw new 错误("获取订阅失败");
+    if (!url) throw new Error("获取订阅失败");
 
     // 3. 写入
-    fs。writeFileSync(OUT_FILE， url， "utf8");
-    console.log("✅ 已写入"， OUT_FILE);
+    fs.writeFileSync(OUT_FILE, url, "utf8");
+    console.log("✅ 已写入", OUT_FILE);
   } catch (e) {
-    console。error("❌ 运行失败:"， e.message);
-    process。exit(1);
+    console.error("❌ 运行失败:", e.message);
+    process.exit(1);
   }
 })();
 
