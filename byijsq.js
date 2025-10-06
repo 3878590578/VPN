@@ -1,5 +1,5 @@
-import fetch from "node-fetch";
-import fs from "fs";
+const fetch = require("node-fetch");
+const fs = require("fs");
 
 async function main() {
   const emailPrefix = Math.random().toString(36).substring(2, 10);
@@ -36,7 +36,7 @@ async function main() {
   const userRes = await fetch("https://byijsq.com/user", {
     method: "GET",
     headers: {
-      "cookie": cookie,
+      cookie: cookie,
       "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1)",
     },
   });
@@ -53,7 +53,7 @@ async function main() {
   const subLink = match[1];
   console.log("✅ 订阅链接:", subLink);
 
-  // 保存到文件
+  // 保存到文件（覆盖式）
   fs.writeFileSync("sub.txt", subLink);
   console.log("💾 已保存为 sub.txt");
 }
