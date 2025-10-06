@@ -48,7 +48,7 @@ async function getSubscribe() {
         const subscribe = await getSubscribe();
         if(subscribe) {
             fs.writeFileSync("subscribe.txt", subscribe);
-            console.log("订阅链接已保存到 subscribe.txt");
+console。log("文件生成路径:"， process.cwd() + "/subscribe.txt");
         }
     }
 })();
