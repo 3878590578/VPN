@@ -12,20 +12,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - - name: Setup Node
-  uses: actions/setup-node@v4
-  with:
-    node-version: 18
-    # cache: 'npm'   # 先注释掉
-
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          # cache: 'npm'   # 有 lock 文件后再放开
 
       - name: Install deps
-        run: npm ci          # 利用现有 package.json + package-lock
+        run: npm ci
 
       - name: Run fast8888.js
         env:
-          EMAIL:    ${{ secrets.EMAIL }}
-          PASSWORD: ${{ secrets.PASSWORD }}
+          EMAIL:       ${{ secrets.EMAIL }}
+          PASSWORD:    ${{ secrets.PASSWORD }}
           INVITE_CODE: ${{ secrets.INVITE_CODE }}
         run: node fast8888.js
 
