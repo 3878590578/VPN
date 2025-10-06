@@ -11,14 +11,14 @@ const fetch  = require("node-fetch");
 const OUT_FILE = path.join(__dirname, "fast8888.txt");
 const RETRY    = 3;
 const MAIL_POOL= [               // 主流域名，降低一次性邮箱特征
-  '@gmail.com'，
-  '@outlook.com'，
+  '@gmail.com',
+  '@outlook.com',
   '@proton.me'
 ];
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
 /* ---------- 工具 ---------- */
-const randStr = (len = 16) => crypto.randomBytes(len).toString('base64url')。slice(0， len);
+const randStr = (len = 16) => crypto.randomBytes(len).toString('base64url').slice(0， len);
 const randMail= () => `${crypto.randomUUID().replace(/-/g, '')}${MAIL_POOL[Math.floor(Math.random() * MAIL_POOL.length)]}`;
 const sleep   = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -26,7 +26,7 @@ const sleep   = (ms) => new Promise(r => setTimeout(r, ms));
 (async () => {
   const email    = randMail();
   const password = randStr(16);
-  console。log(`🚀 随机注册：${email} / ${password}`);
+  console.log(`🚀 随机注册：${email} / ${password}`);
 
   try {
     // 1. 注册（带重试）
