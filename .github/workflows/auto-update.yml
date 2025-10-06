@@ -2,13 +2,12 @@ name: Auto Update BYIJSQ Subscribe
 
 on:
   schedule:
-    - cron: "0 */3 * * *"  # 每3小时自动运行
-  workflow_dispatch:       # 手动运行
+    - cron: "0 */3 * * *"   # 每 3 小时
+  workflow_dispatch:        # 手动运行
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -21,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: npm install node-fetch@2 cheerio
 
-      - name: Run registration script
+      - name: Run registration & fetch sub
         run: node byijsq.js
 
       - name: Commit & Push YAML
@@ -36,4 +35,5 @@ jobs:
             git push
           else
             echo "❌ 没找到 byijsq.yaml，可能注册或提取失败"
+            exit 1
           fi
