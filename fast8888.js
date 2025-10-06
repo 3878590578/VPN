@@ -26,7 +26,7 @@ const sleep   = (ms) => new Promise(r => setTimeout(r, ms));
 (async () => {
 const email    = randMail();
 const password = randStr(16);
-console.log(🚀 随机注册：${email} / ${password});
+console.log(`🚀 随机注册：${email} / ${password}`);
 try {
 // 1. 注册（带重试）
 const regOK = await retry(() => register(email, password), RETRY);
