@@ -1,0 +1,28 @@
+name: Auto BYIJSQ
+
+on:
+  schedule:
+    - cron: "0 */3 * * *"  # 每3小时运行
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run Script
+        run: |
+          npm install node-fetch@3
+          node byijsq.js
+      - name: Commit result
+        run: |
+          git config --global user.email "bot@example.com"
+          git config --global user.name "GitHub Bot"
+          git add sub.txt
+          git commit -m "update subscription"
+          git push
