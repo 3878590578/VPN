@@ -32,18 +32,20 @@ const USER_PAGE   = `${BASE}/user`;
     console.log('🟢 注册响应:', regText.slice(0, 100));
 
   
-    // 2. 登录
+
+// 2. 登录
 const loginRes = await fetch(LOGIN_API, {
-  method: 'POST',
-  headers: { 'content-type': 'application/x-www-form-urlencoded' },
+  method: 'POST'，
+  headers: { 'content-type': 'application/x-www-form-urlencoded' }，
   body: new URLSearchParams({ email, passwd: password }).toString(),
   redirect: 'follow'
 });
-const cookie = loginRes.headers.raw()['set-cookie']
-  ?.map(c => c.split(';')[0])
+const cookie = loginRes.headers。raw()['set-cookie']
+  ?.map(c => c。split(';')[0])
   .join('; ');
-if (!cookie) throw new 错误('❌ 登录后无 cookie');
-console。log('🍪 登录成功');
+if (!cookie) throw new Error('❌ 登录后无 cookie');
+console.log('🍪 登录成功');
+
 
 
     // 3. 用户中心 → 先保存调试文件
