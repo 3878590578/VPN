@@ -1,0 +1,79 @@
+name: 自动测速并排序
+
+on:
+  schedule:
+    - cron: '0 */8 * * *'      # 每 8 小时一次
+  workflow_dispatch:           # 手动按钮
+  push:
+    paths:
+      - 'yuanshi_raw.txt'
+
+jobs:
+  speed:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1. 装 sing-box + 测速插件
+      - name: Install sing-box
+        run: |
+          curl -L -o sb.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.8.0/sing-box-1.8.0-linux-amd64.tar.gz
+          tar -xzf sb.tar.gz && sudo mv sing-box /usr/local/bin && rm sb.tar.gz
+          curl -L -o sb-speed https://github.com/v2rayA/sing-box-speed/releases/download/v0.1.0/sb-speed_0.1.0_linux_amd64
+          chmod +x sb-speed && sudo mv sb-speed /usr/local/bin
+
+      # 2. 测速 + 重命名 + 排序
+      - name: Run speed test
+        run: |
+          python3 - << 'EOF'
+          import subprocess, re, os, concurrent.futures, json, urllib.parse
+
+          raw_file = "yuanshi_raw.txt"
+          out_file = "speedpaixu.txt"
+
+          lines = []
+          with open(raw_file, encoding="utf-8") as f:
+              for l in f:
+                  l = l.strip()
+                  if not l or l.startswith("#"): continue
+                  # 取原始名字（# 后面那段）
+                  name = l.split("#")[-1] if "#" in l else "unknown"
+                  lines.append({"raw": l, "name": name})
+
+          def test_one(item):
+              try:
+                  out = subprocess.check_output(
+                      ["sb-speed", "-url", "http://cachefly.cachefly.net/100mb.test", "-timeout", "6s", "-config", item["raw"]],
+                      stderr=subprocess.STDOUT, timeout=10
+                  )
+                  m = re.search(r"Speed:\s+(\d+\.\d+)\s*Mbps", out.decode())
+                  mbps = float(m.group(1)) if m else 0.0
+              except:
+                  mbps = 0.0
+              # Mbps -> MB/s
+              mb_per_s = mbps / 8
+              # 拼新名字
+              new_name = re.sub(r'\s+', '_', item["name"]) + f"-{mb_per_s:.1f}MB/s"
+              # 把原链接的 # 后面换掉
+              new_line = re.sub(r'#[^|]+$', f'#{new_name}', item["raw"])
+              return {"line": new_line, "speed": mb_per_s}
+
+          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as exe:
+              done = list(exe.map(test_one, lines))
+
+          # 按速度降序
+          done.sort(key=lambda x: x["speed"], reverse=True)
+
+          with open(out_file, "w", encoding="utf-8") as f:
+              f.write("\n".join([d["line"] for d in done]) + "\n")
+          EOF
+
+      # 3. 提交结果
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add speedpaixu.txt
+          git diff --cached --quiet || (git commit -m "bot: speed test → speedpaixu.txt" && git push)
