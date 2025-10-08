@@ -9,7 +9,10 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-			      - name: 运行测速
+
+      - name: 装 sing-box
         run: |
-          chmod +x speed.py
-          python3 speed.py
+          curl -L -o sb.tgz https://github.com/SagerNet/sing-box/releases/download/v1.9.0/sing-box-1.9.0-linux-amd64.tar.gz
+          tar -xzf sb.tgz && sudo mv sing-box-*/sing-box /usr/local/bin && rm -rf sb.tgz sing-box-*
+
+      - run: echo "sing-box 安装完成"
