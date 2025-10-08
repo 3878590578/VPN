@@ -1,4 +1,4 @@
-name: 极简测速-最后一次
+name: 纯curl测速-终极版
 
 on:
   workflow_dispatch:
@@ -11,39 +11,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 装 sing-box + sb-speed（确定存在）
-        run: |
-          # sing-box 官方 tar.gz
-          curl -L -o sb.tgz https://github.com/SagerNet/sing-box/releases/download/v1.9.0/sing-box-1.9.0-linux-amd64.tar.gz
-          tar -xzf sb.tgz && sudo mv sing-box-*/sing-box /usr/local/bin && rm -rf sb.tgz sing-box-*
-
-          # sb-speed 用我自己传的静态编译版（一定存在）
-          curl -L -o sb-speed https://github.com/3878590578/vpn/releases/download/bin/sb-speed
-          chmod +x sb-speed && sudo mv sb-speed /usr/local/bin
-
-      - name: 测速 + 排序
+      - name: 测速（curl 下载真实 50 MB）
         run: |
           python3 -c "
-          import subprocess, re, concurrent.futures
-          lines = [l.strip() for l in open('yuanshi_raw.txt') if l.strip() and not l.startswith('#')]
-          def test(l):
-              name = l.split('#')[-1]
+          import subprocess, time, concurrent.futures, re, os
+
+          def speed_test(link):
+              name = link.split('#')[-1]
+              t0 = time.time()
               try:
-                  out = subprocess.check_output(['sb-speed','-url','https://speed.cloudflare.com/__down?bytes=50000000','-timeout','6s','-config',l], stderr=subprocess.STDOUT, timeout=10)
-                  m = re.search(r'Speed:\s+(\d+\.\d+)\s*Mbps', out.decode())
-                  mbps = float(m.group(1)) if m else 0
-              except: mbps = 0
-              mb = mbps/8
-              new_name = re.sub(r'\s+','_',name) + f'-{mb:.1f}MB/s'
-              return re.sub(r'#[^|]+$', f'#{new_name}', l)
-          done = list(concurrent.futures.ThreadPoolExecutor(max_workers=1).map(test, lines))
-          done.sort(key=lambda x: float(x.split('-')[-1].replace('MB/s','')), reverse=True)
-          with open('speedpaixu.txt','w',encoding='utf-8') as f: f.write('\n'.join(done)+'\n')
-          print('>>> 写盘完成，共',len(done),'条')
+                  # 下载 50 MB 到内存
+                  subprocess.run(['curl', '-s', '-o', '/dev/null', '-w', '%{size_download} %{speed_download}',
+                                  'https://speed.cloudflare.com/__down?bytes=50000000'], capture_output=True, text=True, timeout=15)
+                  out = subprocess.run(['curl', '-s', '-o', '/dev/null', '-w', '%{size_download} %{speed_download}',
+                                        'https://speed.cloudflare.com/__down?bytes=50000000'], capture_output=True, text=True, timeout=15).stdout
+                  bytes_down, speed_bps = map(float, out.split())
+                  mbps = speed_bps * 8 / 1_000_000   # bps → Mbps
+              except:
+                  mbps = 0
+              mb_per_s = mbps / 8
+              new_name = re.sub(r'\s+', '_', name) + f'-{mb_per_s:.1f}MB/s'
+              return re.sub(r'#[^|]+$', f'#{new_name}', link)
+
+          lines = [l.strip() for l in open('yuanshi_raw.txt') if l.strip() and not l.startswith('#')]
+          done = list(concurrent.futures.ThreadPoolExecutor(max_workers=1).map(speed_test, lines))
+          done.sort(key=lambda x: float(x.split('-')[-1].replace('MB/s', '')), reverse=True)
+          with open('speedpaixu.txt', 'w', encoding='utf-8') as f: f.write('\n'.join(done) + '\n')
+          print('>>> 写盘完成，共', len(done), '条')
 
       - name: 提交
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add speedpaixu.txt
-          git commit -m "bot: 测速完成" && git push || echo "无变化"
+          git commit -m "bot: 纯curl测速完成" && git push || echo "无变化"
