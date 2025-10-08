@@ -12,14 +12,17 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-
-      - name: 安装 sing-box（完整版，含 convert）+ 插件
+			
+			
+      - name: 安装 sing-box（开发版，含 convert）
         run: |
-          curl -L -o sb.tgz https://github.com/SagerNet/sing-box/releases/download/v1.9.0/sing-box-1.9.0-linux-amd64.tar.gz
+          # 下载开发版（带 convert）
+          curl -L -o sb.tgz https://github.com/SagerNet/sing-box/releases/download/v1.9.0-rc.1/sing-box-1.9.0-rc.1-linux-amd64.tar.gz
           tar -xzf sb.tgz && sudo mv sing-box-*/sing-box /usr/local/bin && rm -rf sb.tgz sing-box-*
           sudo apt-get update && sudo apt-get install -y obfs4proxy
           sing-box version
           sing-box convert --help > /dev/null && echo "convert 可用"
+
 
       - name: 运行真实代理测速
         run: |
