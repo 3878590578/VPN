@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-import subprocess, time, concurrent.futures, re, sys, os
+import subprocess, time, concurrent.futures, re, os
 
 def speed_test(link):
     name = link.split('#')[-1]
     try:
-        # 用 curl 下载 50 MB 到内存，取平均速度
         out = subprocess.run(
             ['curl', '-s', '-o', '/dev/null',
              '-w', '%{speed_download}',
@@ -19,9 +18,14 @@ def speed_test(link):
     new_name = re.sub(r'\s+', '_', name) + f'-{mb_per_s:.1f}MB/s'
     return re.sub(r'#[^|]+$', f'#{new_name}', link)
 
-lines = [l.strip() for l in open('yuanshi_raw.txt') if l.strip() and not l.startswith('#')]
-done = list(concurrent.futures.ThreadPoolExecutor(max_workers=1).map(speed_test, lines))
-done.sort(key=lambda x: float(x.split('-')[-1].replace('MB/s', '')), reverse=True)
-with open('speedpaixu.txt', 'w', encoding='utf-8') as f:
-    f.write('\n'.join(done) + '\n')
-print('>>> 写盘完成，共', len(done), '条')
+def extract_speed(link):
+    m = re.search(r'-(\d+(?:\.\d+)?)MB/s$', link)
+    return float(m.group(1)) if m else 0.0
+
+if __name__ == '__main__':
+    lines = [l.strip() for l in open('yuanshi_raw.txt') if l.strip() and not l.startswith('#')]
+    done = list(concurrent.futures.ThreadPoolExecutor(max_workers=1).map(speed_test, lines))
+    done.sort(key=extract_speed, reverse=True)
+    with open('speedpaixu.txt', 'w', encoding='utf-8') as f:
+        f.write('\n'.join(done) + '\n')
+    print('>>> 写盘完成，共', len(done), '条')
