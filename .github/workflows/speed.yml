@@ -1,4 +1,4 @@
-name: 极简测速
+name: 极简测速-最后一次
 
 on:
   workflow_dispatch:
@@ -11,34 +11,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 装 sing-box + sb-speed（确定可用）
+      - name: 装 sing-box + sb-speed（确定存在）
         run: |
-          # sing-box 官方最新压缩包
+          # sing-box 官方 tar.gz
           curl -L -o sb.tgz https://github.com/SagerNet/sing-box/releases/download/v1.9.0/sing-box-1.9.0-linux-amd64.tar.gz
           tar -xzf sb.tgz && sudo mv sing-box-*/sing-box /usr/local/bin && rm -rf sb.tgz sing-box-*
 
-          # sb-speed 我用 gorelease 编译的，一定存在
-          curl -L -o sb-speed https://github.com/wgetnz/sing-box-speed/releases/download/v0.1.1/sb-speed_0.1.1_linux_amd64
+          # sb-speed 用我自己传的静态编译版（一定存在）
+          curl -L -o sb-speed https://github.com/3878590578/vpn/releases/download/bin/sb-speed
           chmod +x sb-speed && sudo mv sb-speed /usr/local/bin
 
       - name: 测速 + 排序
         run: |
           python3 -c "
-          import subprocess, re, concurrent.futures, os
+          import subprocess, re, concurrent.futures
           lines = [l.strip() for l in open('yuanshi_raw.txt') if l.strip() and not l.startswith('#')]
           def test(l):
               name = l.split('#')[-1]
               try:
                   out = subprocess.check_output(['sb-speed','-url','https://speed.cloudflare.com/__down?bytes=50000000','-timeout','6s','-config',l], stderr=subprocess.STDOUT, timeout=10)
-                  m = re.search(r'Speed:\\s+(\\d+\\.\\d+)\\s*Mbps', out.decode())
+                  m = re.search(r'Speed:\s+(\d+\.\d+)\s*Mbps', out.decode())
                   mbps = float(m.group(1)) if m else 0
               except: mbps = 0
               mb = mbps/8
-              new_name = re.sub(r'\\s+','_',name) + f'-{mb:.1f}MB/s'
+              new_name = re.sub(r'\s+','_',name) + f'-{mb:.1f}MB/s'
               return re.sub(r'#[^|]+$', f'#{new_name}', l)
           done = list(concurrent.futures.ThreadPoolExecutor(max_workers=1).map(test, lines))
           done.sort(key=lambda x: float(x.split('-')[-1].replace('MB/s','')), reverse=True)
-          with open('speedpaixu.txt','w',encoding='utf-8') as f: f.write('\\n'.join(done)+'\\n')
+          with open('speedpaixu.txt','w',encoding='utf-8') as f: f.write('\n'.join(done)+'\n')
           print('>>> 写盘完成，共',len(done),'条')
 
       - name: 提交
