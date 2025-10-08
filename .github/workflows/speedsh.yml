@@ -16,3 +16,7 @@ jobs:
           tar -xzf sb.tgz && sudo mv sing-box-*/sing-box /usr/local/bin && rm -rf sb.tgz sing-box-*
 
       - run: echo "sing-box 安装完成"
+      - name: 运行测速
+        run: |
+          chmod +x speed.py
+          python3 speed.py
