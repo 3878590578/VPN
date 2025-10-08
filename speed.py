@@ -3,31 +3,31 @@ import subprocess, json, concurrent.futures, re, os, time
 
 def speed_test(link):
     name = link.split('#')[-1]
-    # 最小 sing-box 配置：本地 socks5 → 单节点出口
     cfg = {
         "log": {"level": "error"},
-        "inbounds":  [{"type": "socks", "listen": "127.0.0.1", "listen_port": 2080}],
+        "inbounds": [{"type": "socks", "listen": "127.0.0.1", "listen_port": 2080}],
         "outbounds": [{"type": "urltest", "outbounds": ["proxy"]},
                       {"type": "direct", "tag": "direct"},
-                      {"tag": "proxy", "type": "shadowsocks", "server": "dummy"}]  # 占位
+                      {"tag": "proxy", "type": "shadowsocks", "server": "dummy"}]
     }
     try:
         out = subprocess.run(['sing-box', 'convert', '--share', link],
                              capture_output=True, text=True, timeout=8).stdout.strip()
+        if not out:
+            raise ValueError('convert 返回空')
         outbound = json.loads(out)
     except Exception as e:
-        print(f'>>> convert 失败: {e}')
+        print(f'>>> convert 失败: {e}  节点: {link[:60]}...')
         return link.replace(name, name + '-0.0MB/s')
 
-    cfg['outbounds'][-1] = outbound   # 替换占位
+    cfg['outbounds'][-1] = outbound
     with open('tmp.json', 'w', encoding='utf-8') as f:
         json.dump(cfg, f, ensure_ascii=False)
 
     sb = subprocess.Popen(['sing-box', 'run', '-c', 'tmp.json'],
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    time.sleep(3)          # 等 socks 启动
+    time.sleep(3)
     try:
-        # 走 socks5 下载 50 MB
         out = subprocess.run(
             ['curl', '-s', '-o', '/dev/null', '--socks5', '127.0.0.1:2080',
              '-w', '%{speed_download}', 'https://speed.cloudflare.com/__down?bytes=50000000'],
