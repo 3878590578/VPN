@@ -1,0 +1,12 @@
+name: speed按钮测试
+on:
+  workflow_dispatch:
+
+jobs:
+  speed:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "speed 按钮出现了！"
