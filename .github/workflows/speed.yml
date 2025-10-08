@@ -1,7 +1,7 @@
 name: 调试-50MB测速
 
 on:
-  workflow_dispatch:   # 只留手动，方便你反复试
+  workflow_dispatch:
   push:
     paths:
       - 'yuanshi_raw.txt'
@@ -14,13 +14,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. 装 sing-box + sb-speed
-      - name: Install sing-box
+      # 1. 安装 sing-box + sb-speed（官方静态编译，通用格式）
+      - name: 安装 sing-box + sb-speed
         run: |
-          curl -L -o sb.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.8.0/sing-box-1.8.0-linux-amd64.tar.gz
-          tar -xzf sb.tar.gz && sudo mv sing-box /usr/local/bin && rm sb.tar.gz
+          # 1) 下载静态 sing-box
+          curl -L -o sing-box https://github.com/SagerNet/sing-box/releases/download/v1.8.0/sing-box-1.8.0-linux-amd64
+          chmod +x sing-box && sudo mv sing-box /usr/local/bin
+
+          # 2) 下载静态 sb-speed（官方编译）
           curl -L -o sb-speed https://github.com/v2rayA/sing-box-speed/releases/download/v0.1.0/sb-speed_0.1.0_linux_amd64
           chmod +x sb-speed && sudo mv sb-speed /usr/local/bin
+
+          # 3) 验证格式
+          file /usr/local/bin/sb-speed
+          sb-speed -h
 
       # 2. 裸下载测试（50 MB）
       - name: 裸下载测试-看 Actions 能否拉动文件
@@ -54,7 +61,7 @@ jobs:
                        "-timeout", "6s", "-config", item["raw"]],
                       stderr=subprocess.STDOUT, timeout=10
                   )
-                  print(">>> sb-speed raw:", out.decode().strip())   # 打印原始回显
+                  print(">>> sb-speed raw:", out.decode().strip())
                   m = re.search(r"Speed:\s+(\d+\.\d+)\s*Mbps", out.decode())
                   mbps = float(m.group(1)) if m else 0.0
               except Exception as e:
@@ -67,7 +74,6 @@ jobs:
               new_line = re.sub(r'#[^|]+$', f'#{new_name}', item["raw"])
               return {"line": new_line, "speed": mb_per_s}
 
-          # 单线程，最不容易被 CDN 拉黑
           with concurrent.futures.ThreadPoolExecutor(max_workers=1) as exe:
               done = list(exe.map(test_one, lines))
 
