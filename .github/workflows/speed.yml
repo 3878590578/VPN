@@ -12,8 +12,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-			
-			
+	
       - name: 安装 sing-box（开发版，含 convert）
         run: |
           # 下载开发版（带 convert）
