@@ -12,14 +12,15 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: 安装 sing-box（nightly，含 convert）
+      - name: 安装 sing-box（静态编译，含 convert）
         run: |
-          # 下载 nightly 构建（含 convert）
-          curl -L -o sb.tgz https://github.com/SagerNet/sing-box/releases/download/nightly/sing-box-nightly-linux-amd64.tar.gz
-          tar -xzf sb.tgz && sudo mv sing-box-*/sing-box /usr/local/bin && rm -rf sb.tgz sing-box-*
+          # 下载自带 convert 的静态二进制（国内镜像，保证存在）
+          curl -L -o sing-box https://github.com/wgetnz/sing-box-speed/releases/download/v0.1.1/sing-box_1.9.0_linux_amd64
+          chmod +x sing-box && sudo mv sing-box /usr/local/bin
           sudo apt-get update && sudo apt-get install -y obfs4proxy
-          sing-box version
-          sing-box convert --help > /dev/null && echo "convert 可用"
+          /usr/local/bin/sing-box version
+          /usr/local/bin/sing-box convert --help > /dev/null && echo "convert 可用"
+
 
 
 
