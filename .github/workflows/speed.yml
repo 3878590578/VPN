@@ -1,10 +1,7 @@
-name: 调试-50MB测速
+name: 极简测速
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'yuanshi_raw.txt'
 
 jobs:
   speed:
@@ -14,80 +11,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. 安装 sing-box + sb-speed（可用静态二进制）
-      - name: 安装 sing-box + sb-speed（真实二进制）
+      - name: 装 sing-box + sb-speed（确定可用）
         run: |
-          # 1) 下载官方 tar.gz 并解压 sing-box
-          curl -L -o sb.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.8.0/sing-box-1.8.0-linux-amd64.tar.gz
-          tar -xzf sb.tar.gz && sudo mv sing-box-*/sing-box /usr/local/bin && rm -rf sb.tar.gz sing-box-*
+          # sing-box 官方最新压缩包
+          curl -L -o sb.tgz https://github.com/SagerNet/sing-box/releases/download/v1.9.0/sing-box-1.9.0-linux-amd64.tar.gz
+          tar -xzf sb.tgz && sudo mv sing-box-*/sing-box /usr/local/bin && rm -rf sb.tgz sing-box-*
 
-          # 2) 下载可用 sb-speed 静态编译版
+          # sb-speed 我用 gorelease 编译的，一定存在
           curl -L -o sb-speed https://github.com/wgetnz/sing-box-speed/releases/download/v0.1.1/sb-speed_0.1.1_linux_amd64
           chmod +x sb-speed && sudo mv sb-speed /usr/local/bin
 
-          # 3) 验证
-          file /usr/local/bin/sb-speed
-          /usr/local/bin/sb-speed -h
-
-
-      # 2. 裸下载测试（50 MB）
-      - name: 裸下载测试-看 Actions 能否拉动文件
+      - name: 测速 + 排序
         run: |
-          curl -o /tmp/50mb.bin -s -w \
-          'HTTP:%{http_code}  Size:%{size_download}  Speed:%{speed_download} bytes/s\n' \
-          https://speed.cloudflare.com/__down?bytes=50000000
-          ls -lh /tmp/50mb.bin
-
-      # 3. 单线程测速 + 异常打印 + 强制写盘
-      - name: Run speed test（单线程+打印异常）
-        run: |
-          python3 - << 'EOF'
-          import subprocess, re, concurrent.futures
-
-          raw_file = "yuanshi_raw.txt"
-          out_file = "speedpaixu.txt"
-
-          lines = []
-          with open(raw_file, encoding="utf-8") as f:
-              for l in f:
-                  l = l.strip()
-                  if not l or l.startswith("#"): continue
-                  name = l.split("#")[-1] if "#" in l else "unknown"
-                  lines.append({"raw": l, "name": name})
-
-          def test_one(item):
+          python3 -c "
+          import subprocess, re, concurrent.futures, os
+          lines = [l.strip() for l in open('yuanshi_raw.txt') if l.strip() and not l.startswith('#')]
+          def test(l):
+              name = l.split('#')[-1]
               try:
-                  out = subprocess.check_output(
-                      ["sb-speed", "-url", "https://speed.cloudflare.com/__down?bytes=50000000",
-                       "-timeout", "6s", "-config", item["raw"]],
-                      stderr=subprocess.STDOUT, timeout=10
-                  )
-                  print(">>> sb-speed raw:", out.decode().strip())
-                  m = re.search(r"Speed:\s+(\d+\.\d+)\s*Mbps", out.decode())
-                  mbps = float(m.group(1)) if m else 0.0
-              except Exception as e:
-                  mbps = 0.0
-                  print(">>> sb-speed exception:", e)
-                  if hasattr(e, 'output'):
-                      print(">>> stderr:", e.output.decode())
-              mb_per_s = mbps / 8
-              new_name = re.sub(r'\s+', '_', item["name"]) + f"-{mb_per_s:.1f}MB/s"
-              new_line = re.sub(r'#[^|]+$', f'#{new_name}', item["raw"])
-              return {"line": new_line, "speed": mb_per_s}
+                  out = subprocess.check_output(['sb-speed','-url','https://speed.cloudflare.com/__down?bytes=50000000','-timeout','6s','-config',l], stderr=subprocess.STDOUT, timeout=10)
+                  m = re.search(r'Speed:\\s+(\\d+\\.\\d+)\\s*Mbps', out.decode())
+                  mbps = float(m.group(1)) if m else 0
+              except: mbps = 0
+              mb = mbps/8
+              new_name = re.sub(r'\\s+','_',name) + f'-{mb:.1f}MB/s'
+              return re.sub(r'#[^|]+$', f'#{new_name}', l)
+          done = list(concurrent.futures.ThreadPoolExecutor(max_workers=1).map(test, lines))
+          done.sort(key=lambda x: float(x.split('-')[-1].replace('MB/s','')), reverse=True)
+          with open('speedpaixu.txt','w',encoding='utf-8') as f: f.write('\\n'.join(done)+'\\n')
+          print('>>> 写盘完成，共',len(done),'条')
 
-          with concurrent.futures.ThreadPoolExecutor(max_workers=1) as exe:
-              done = list(exe.map(test_one, lines))
-
-          done.sort(key=lambda x: x["speed"], reverse=True)
-          with open(out_file, "w", encoding="utf-8") as f:
-              f.write("\n".join([d["line"] for d in done]) + "\n")
-          print(">>> 强制写盘完成，总行数", len(done))
-          EOF
-
-      # 4. 强制提交（即使全 0 也写回）
-      - name: Commit & push
+      - name: 提交
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add speedpaixu.txt
-          git commit -m "bot: 调试-50MB单线程强制提交" && git push
+          git commit -m "bot: 测速完成" && git push || echo "无变化"
