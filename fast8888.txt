@@ -1,1 +1,0 @@
-http://panel.fast8888.com/api/v1/client/subscribe?token=40c719f30b136a1d2da9337886acde9f
