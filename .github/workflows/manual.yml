@@ -1,0 +1,12 @@
+name: 手动测速按钮
+on:
+  workflow_dispatch:
+
+jobs:
+  speed:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "按钮出现了！"
