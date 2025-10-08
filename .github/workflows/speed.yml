@@ -1,6 +1,9 @@
-name: speed按钮测试
+name: 真实代理测速
 on:
-  workflow_dispatch:
+  workflow_dispatch:   # 手动按钮
+  push:
+    paths:
+      - 'yuanshi_raw.txt'
 
 jobs:
   speed:
@@ -10,16 +13,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 装 sing-box
+      - name: 安装 sing-box（完整版，含 convert）+ 插件
         run: |
           curl -L -o sb.tgz https://github.com/SagerNet/sing-box/releases/download/v1.9.0/sing-box-1.9.0-linux-amd64.tar.gz
           tar -xzf sb.tgz && sudo mv sing-box-*/sing-box /usr/local/bin && rm -rf sb.tgz sing-box-*
+          sudo apt-get update && sudo apt-get install -y obfs4proxy
+          sing-box version
+          sing-box convert --help > /dev/null && echo "convert 可用"
 
-      - run: echo "sing-box 安装完成"
-      - name: 运行测速
+      - name: 运行真实代理测速
         run: |
           chmod +x speed.py
           python3 speed.py
+
       - name: 提交结果
         run: |
           git config user.name "github-actions[bot]"
