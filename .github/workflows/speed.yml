@@ -1,9 +1,7 @@
-name: 自动测速并排序（50 MB 真实下载）
+name: 调试-50MB测速
 
 on:
-  schedule:
-    - cron: '0 */8 * * *'      # 每 8 小时一次
-  workflow_dispatch:           # 手动按钮
+  workflow_dispatch:   # 只留手动，方便你反复试
   push:
     paths:
       - 'yuanshi_raw.txt'
@@ -16,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. 安装 sing-box + sb-speed
+      # 1. 装 sing-box + sb-speed
       - name: Install sing-box
         run: |
           curl -L -o sb.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.8.0/sing-box-1.8.0-linux-amd64.tar.gz
@@ -24,8 +22,16 @@ jobs:
           curl -L -o sb-speed https://github.com/v2rayA/sing-box-speed/releases/download/v0.1.0/sb-speed_0.1.0_linux_amd64
           chmod +x sb-speed && sudo mv sb-speed /usr/local/bin
 
-      # 2. 测速（50 MB）+ 重命名 + 排序
-      - name: Run speed test
+      # 2. 裸下载测试（50 MB）
+      - name: 裸下载测试-看 Actions 能否拉动文件
+        run: |
+          curl -o /tmp/50mb.bin -s -w \
+          'HTTP:%{http_code}  Size:%{size_download}  Speed:%{speed_download} bytes/s\n' \
+          https://speed.cloudflare.com/__down?bytes=50000000
+          ls -lh /tmp/50mb.bin
+
+      # 3. 单线程测速 + 异常打印 + 强制写盘
+      - name: Run speed test（单线程+打印异常）
         run: |
           python3 - << 'EOF'
           import subprocess, re, concurrent.futures
@@ -48,27 +54,33 @@ jobs:
                        "-timeout", "6s", "-config", item["raw"]],
                       stderr=subprocess.STDOUT, timeout=10
                   )
+                  print(">>> sb-speed raw:", out.decode().strip())   # 打印原始回显
                   m = re.search(r"Speed:\s+(\d+\.\d+)\s*Mbps", out.decode())
                   mbps = float(m.group(1)) if m else 0.0
-              except:
+              except Exception as e:
                   mbps = 0.0
+                  print(">>> sb-speed exception:", e)
+                  if hasattr(e, 'output'):
+                      print(">>> stderr:", e.output.decode())
               mb_per_s = mbps / 8
               new_name = re.sub(r'\s+', '_', item["name"]) + f"-{mb_per_s:.1f}MB/s"
               new_line = re.sub(r'#[^|]+$', f'#{new_name}', item["raw"])
               return {"line": new_line, "speed": mb_per_s}
 
-          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as exe:
+          # 单线程，最不容易被 CDN 拉黑
+          with concurrent.futures.ThreadPoolExecutor(max_workers=1) as exe:
               done = list(exe.map(test_one, lines))
 
           done.sort(key=lambda x: x["speed"], reverse=True)
           with open(out_file, "w", encoding="utf-8") as f:
               f.write("\n".join([d["line"] for d in done]) + "\n")
+          print(">>> 强制写盘完成，总行数", len(done))
           EOF
 
-      # 3. 提交结果
+      # 4. 强制提交（即使全 0 也写回）
       - name: Commit & push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add speedpaixu.txt
-          git diff --cached --quiet || (git commit -m "bot: 50 MB speed test → speedpaixu.txt" && git push)
+          git commit -m "bot: 调试-50MB单线程强制提交" && git push
