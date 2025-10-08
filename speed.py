@@ -1,36 +1,33 @@
 #!/usr/bin/env python3
-import subprocess, json, concurrent.futures, re, os
+import subprocess, json, concurrent.futures, re, os, time
 
 def speed_test(link):
     name = link.split('#')[-1]
-    # 构造临时 sing-box 配置（单节点）
+    # 最小 sing-box 配置：本地 socks5 → 单节点出口
     cfg = {
         "log": {"level": "error"},
-        "inbounds": [{"type": "socks", "listen": "127.0.0.1", "listen_port": 2080}],
+        "inbounds":  [{"type": "socks", "listen": "127.0.0.1", "listen_port": 2080}],
         "outbounds": [{"type": "urltest", "outbounds": ["proxy"]},
                       {"type": "direct", "tag": "direct"},
-                      {"tag": "proxy", "type": "shadowsocks", "server": "dummy"}]   # 占位
+                      {"tag": "proxy", "type": "shadowsocks", "server": "dummy"}]  # 占位
     }
-    # 把分享链接转成 sing-box outbound（sb 支持 vmess/vless/trojan/ss/hysteria2）
     try:
-        out = subprocess.run(
-            ['sing-box', 'convert', '--share', link],
-            capture_output=True, text=True, timeout=5
-        ).stdout.strip()
+        out = subprocess.run(['sing-box', 'convert', '--share', link],
+                             capture_output=True, text=True, timeout=8).stdout.strip()
         outbound = json.loads(out)
-    except:
-        return link.replace(name, name + '-0.0MB/s')   # 失败就标 0
+    except Exception as e:
+        print(f'>>> convert 失败: {e}')
+        return link.replace(name, name + '-0.0MB/s')
 
     cfg['outbounds'][-1] = outbound   # 替换占位
     with open('tmp.json', 'w', encoding='utf-8') as f:
         json.dump(cfg, f, ensure_ascii=False)
 
-    # 启动 sing-box 后台
     sb = subprocess.Popen(['sing-box', 'run', '-c', 'tmp.json'],
-                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    time.sleep(2)          # 等 socks 起来
+                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    time.sleep(3)          # 等 socks 启动
     try:
-        # 让 curl 走 socks5 代理下载 50 MB
+        # 走 socks5 下载 50 MB
         out = subprocess.run(
             ['curl', '-s', '-o', '/dev/null', '--socks5', '127.0.0.1:2080',
              '-w', '%{speed_download}', 'https://speed.cloudflare.com/__down?bytes=50000000'],
@@ -38,8 +35,9 @@ def speed_test(link):
         ).stdout.strip()
         speed_bps = float(out)
         mbps = speed_bps * 8 / 1_000_000
-    except:
+    except Exception as e:
         mbps = 0
+        print(f'>>> curl 失败: {e}')
     finally:
         sb.terminate()
         sb.wait()
