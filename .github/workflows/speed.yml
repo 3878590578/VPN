@@ -14,20 +14,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. 安装 sing-box + sb-speed（官方静态编译，通用格式）
+      # 1. 安装 sing-box + sb-speed（可用静态二进制）
       - name: 安装 sing-box + sb-speed
         run: |
-          # 1) 下载静态 sing-box
+          # 1) sing-box 官方静态
           curl -L -o sing-box https://github.com/SagerNet/sing-box/releases/download/v1.8.0/sing-box-1.8.0-linux-amd64
           chmod +x sing-box && sudo mv sing-box /usr/local/bin
 
-          # 2) 下载静态 sb-speed（官方编译）
-          curl -L -o sb-speed https://github.com/v2rayA/sing-box-speed/releases/download/v0.1.0/sb-speed_0.1.0_linux_amd64
+          # 2) sb-speed 换源（gorelease 编译版）
+          curl -L -o sb-speed https://github.com/wgetnz/sing-box-speed/releases/download/v0.1.1/sb-speed_0.1.1_linux_amd64
           chmod +x sb-speed && sudo mv sb-speed /usr/local/bin
 
-          # 3) 验证格式
+          # 3) 验证
           file /usr/local/bin/sb-speed
-          sb-speed -h
+          /usr/local/bin/sb-speed -h
 
       # 2. 裸下载测试（50 MB）
       - name: 裸下载测试-看 Actions 能否拉动文件
