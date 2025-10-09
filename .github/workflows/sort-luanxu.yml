@@ -2,35 +2,22 @@ name: Sort luanxu.txt → dy.txt
 
 on:
   push:
-    paths:
-      - 'luanxu.txt'        # 仅当 luanxu.txt 变动才触发
-  workflow_dispatch:        # 也可手动点 Run
+    paths: ['luanxu.txt']
+  workflow_dispatch:
 
 jobs:
   sort:
     runs-on: ubuntu-latest
     permissions:
-      contents: write        # 允许机器人回写仓库
+      contents: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-
-      - name: Install dependencies（本例纯内置库，可无）
-        run: pip install -q -r requirements.txt || true
-
-      - name: Sort nodes
-        run: |
-          python sort.py
-
-      - name: Commit & push if changed
-        run: |
+      - run: python sort.py
+      - run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add dy.txt
-          # 只有真变动才提交，避免空 commit
           git diff --cached --quiet || (git commit -m "Auto-sort luanxu.txt → dy.txt" && git push)
