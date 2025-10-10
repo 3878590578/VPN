@@ -1,9 +1,9 @@
-name: Sort luanxu.txt → dy.txt
+name: Sort & Commit
 
 on:
   push:
-    paths: ['luanxu.txt']
-  workflow_dispatch:
+    paths: ['luanxu.txt']   # 仅当 luanxu.txt 变动才触发
+  workflow_dispatch:        # 手动按钮
 
 jobs:
   sort:
@@ -12,12 +12,20 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
       - uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      - run: python sort.py
-      - run: |
-          git config user.name  "github-actions[bot]"
+
+      - name: Run sort
+        run: python sort.py
+
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add dy.txt
           git diff --cached --quiet || (git commit -m "Auto-sort luanxu.txt → dy.txt" && git push)
