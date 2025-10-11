@@ -2,7 +2,7 @@
 # DY.py - 全协议节点提取器
 # 支持：ss, ssr, vmess, vless, trojan, hysteria, hysteria2, tuic, wireguard, brook, naive, ssh, surge, loon, stash, clash
 
-import base64, json, yaml, re, urllib.request, urllib.error, traceback
+import base64, json, yaml, re, urllib.request, urllib.error, traceback, os, datetime
 from typing import List, Dict
 from urllib.parse import urlparse, parse_qs, unquote
 
@@ -139,7 +139,6 @@ class UniversalExtractor:
     def _parse_wireguard(self, b64: str) -> Dict:
         try:
             decoded = self.b64_decode(b64)
-            # 简易解析
             return {'type': 'wireguard', 'raw': f"wireguard://{b64}", 'config': decoded}
         except Exception:
             return None
@@ -181,23 +180,19 @@ class UniversalExtractor:
         line = line.strip()
         if not line or line.startswith('#'):
             return
-        # 远程URL
         if line.startswith('http'):
             content = self.fetch(line)
             if content:
-                # 先尝试yaml
                 yaml_nodes = self.parse_yaml(content)
                 if yaml_nodes:
                     self.nodes.extend(yaml_nodes)
                 else:
-                    # 按行解析
                     for l in content.splitlines():
                         l = l.strip()
                         node = self.parse_url(l) or self.parse_url(self.b64_decode(l))
                         if node:
                             self.nodes.append(node)
         else:
-            # 本地文件
             try:
                 with open(line, encoding='utf-8') as f:
                     content = f.read()
@@ -224,8 +219,17 @@ class UniversalExtractor:
         return ret
 
     def save(self, nodes: List[Dict], file: str):
-        with open(file, 'w', encoding='utf-8') as f:
+        # 1. 保留机器可读 JSON（可选）
+        with open('DYnodes.json', 'w', encoding='utf-8') as f:
             json.dump(nodes, f, ensure_ascii=False, indent=2)
+
+        # 2. 把 DYjieguo.txt 变成纯 Base64 订阅
+        raw_str = '\n'.join(n.get('raw', '') for n in nodes)
+        b64_bytes = base64.b64encode(raw_str.encode())
+        with open('DYjieguo.txt', 'wb') as f:
+            f.write(b64_bytes)
+
+        # 3. 人类可读列表
         readable = file.replace('.txt', '_readable.txt')
         with open(readable, 'w', encoding='utf-8') as f:
             f.write(f"总计 {len(nodes)} 个节点\n")
@@ -241,7 +245,6 @@ class UniversalExtractor:
                     f.write(f"   密码: {n.get('password')}\n")
 
 def main():
-    import sys, os
     print("全协议节点提取器启动...")
     extractor = UniversalExtractor()
     if not os.path.isfile('DYyuan.txt'):
@@ -253,18 +256,17 @@ def main():
     nodes = extractor.dedup()
     print(f"提取完成，共 {len(nodes)} 个唯一节点")
     extractor.save(nodes, 'DYjieguo.txt')
-    print("结果已保存到 DYjieguo.txt 和 DYjieguo_readable.txt")
-		    # ====== 新增：额外输出 Base64 订阅 ======
-    import base64
-    with open('DYjieguo.txt', 'r', encoding='utf-8') as f:
-        nodes = json.load(f)
-    # 用节点原始字符串拼成完整配置再 Base64
-    raw_str = '\n'.join(n.get('raw', '') for n in nodes)
-    b64_str = base64.b64encode(raw_str.encode()).decode()
-    with open('DYbase64.txt', 'w', encoding='utf-8') as f:
-        f.write(b64_str)
-    print('已生成 Base64 订阅文件：DYbase64.txt')
+    print("结果已保存：")
+    print("  - DYjieguo.txt （Base64 订阅，直接导入）")
+    print("  - DYnodes.json （原始 JSON，备用）")
+    print("  - DYjieguo_readable.txt （人类可读）")
 
+    # ====== 强制提交：时间戳文件保证一定有变更 ======
+    stamp = datetime.datetime.utcnow().isoformat()
+    with open('.timestamp', 'w', encoding='utf-8') as f:
+        f.write(stamp)
+    print(f"生成时间戳 .timestamp {stamp}")
+    print("Git 将强制提交所有输出文件！")
 
 if __name__ == '__main__':
     main()
