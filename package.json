@@ -1,9 +1,0 @@
-{
-  "name": "vpn",
-  "version": "1.0.0",
-  "main": "main.js",
-  "type": "commonjs",
-  "dependencies": {
-    "node-fetch": "^2.6.7"
-  }
-}
