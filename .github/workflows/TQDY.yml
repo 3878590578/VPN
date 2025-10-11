@@ -1,0 +1,51 @@
+# TQDY.yml
+name: 订阅节点提取
+
+on:
+  schedule:
+    # 每天UTC时间2点运行
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # 允许手动触发
+  
+  push:
+    paths:
+      - 'DYyuan.txt'  # 当订阅源文件更新时触发
+
+jobs:
+  extract-nodes:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyyaml
+        
+    - name: Run node extractor
+      run: |
+        python DY.py
+        
+    - name: Upload results
+      uses: actions/upload-artifact@v3
+      with:
+        name: extracted-nodes
+        path: |
+          DYjieguo.txt
+          DYjieguo_readable.txt
+        retention-days: 30
+        
+    - name: Commit results
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add DYjieguo.txt DYjieguo_readable.txt
+        git diff --quiet && git diff --staged --quiet || git commit -m "Update extracted nodes [$(date +'%Y-%m-%d %H:%M:%S')]"
+        git push
