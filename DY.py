@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # DY.py - 全协议节点提取器
-# 输出：ss / vmess / vless / hysteria2 / tuic 单行订阅，直接导入任何客户端
+# 输出：Clash 标准 YAML（proxies 段），直接导入 Clash / Meta / Stash / QX / Loon / Surge
 
 import base64, json, yaml, os, datetime, urllib.request, urllib.error
 from typing import List, Dict
@@ -36,7 +36,7 @@ class UniversalExtractor:
         except Exception:
             return ''
 
-    # ---------- 单行URL ----------
+    # ---------- 单行 URL ----------
     def parse_url(self, url: str) -> Dict:
         try:
             for proto, prefixes in PROTOCOLS.items():
@@ -218,7 +218,7 @@ class UniversalExtractor:
                 ret.append(n)
         return ret
 
-    # ---------- 保存：全部转成单行订阅 ----------
+    # ---------- 保存：Clash 标准 YAML ----------
     def save(self, nodes: List[Dict], file: str):
         # 1. 人类可读列表（照旧）
         readable = file.replace('.txt', '_readable.txt')
@@ -235,31 +235,101 @@ class UniversalExtractor:
                 if 'password' in n:
                     f.write(f"   密码: {n.get('password')}\n")
 
-        # 2. 全部节点 → 原始单行链接（ss/vmess/vless/hysteria2/tuic）
-        lines = []
+        # 2. 生成 Clash 标准 proxies 段
+        proxies = []
         for n in nodes:
             t = n.get('type')
+            # 关键字段缺失直接跳过
+            if not all(k in n for k in ('server', 'port')):
+                continue
+
+            base = {
+                'name': n.get('name') or f"{t}_{n['server']}",
+                'type': t,
+                'server': n['server'],
+                'port': n['port'],
+            }
+
             if t == 'ss':
                 method = n.get('method')
                 password = n.get('password')
                 if not method or not password:
                     continue
-                auth = base64.b64encode(f"{method}:{password}".encode()).decode().rstrip('=')
-                lines.append(f"ss://{auth}@{n['server']}:{n['port']}")
-            elif t == 'vmess':
-                vm = {
-                    "v": "2", "ps": n.get('name', ''), "add": n['server'], "port": str(n['port']),
-                    "id": n['uuid'], "aid": str(n.get('aid', 0)), "net": n.get('net', 'tcp'),
-                    "type": "none", "host": "", "path": "", "tls": n.get('tls', '')
-                }
-                lines.append("vmess://" + base64.b64encode(json.dumps(vm, ensure_ascii=False).encode()).decode())
-            elif t in ('vless', 'trojan', 'hysteria', 'hysteria2', 'tuic'):
-                lines.append(n.get('raw', ''))
-            # 其余协议可按模板继续补充
+                base['cipher'] = method
+                base['password'] = password
 
-        with open('DYjieguo.txt', 'w', encoding='utf-8') as f:
-            f.write('\n'.join(lines))
-        print(f"已输出 {len(lines)} 条单行订阅到 DYjieguo.txt（直接导入）")
+            elif t == 'vmess':
+                uuid = n.get('uuid')
+                if not uuid:
+                    continue
+                base['uuid'] = uuid
+                base['alterId'] = n.get('aid', 0)
+                base['cipher'] = 'auto'
+                if n.get('net') == 'ws':
+                    base['network'] = 'ws'
+                    base['ws-opts'] = {
+                        'path': n.get('path', '/'),
+                        'headers': {'Host': n.get('sni', n['server'])}
+                    }
+                if n.get('tls'):
+                    base['tls'] = True
+                    base['servername'] = n.get('sni', n['server'])
+
+            elif t == 'vless':
+                uuid = n.get('uuid')
+                if not uuid:
+                    continue
+                base['uuid'] = uuid
+                base['tls'] = bool(n.get('tls'))
+                if base['tls']:
+                    base['servername'] = n.get('sni', n['server'])
+                if n.get('network') == 'ws':
+                    base['network'] = 'ws'
+                    base['ws-opts'] = {
+                        'path': n.get('path', '/'),
+                        'headers': {'Host': n.get('sni', n['server'])}
+                    }
+
+            elif t in ('hysteria', 'hysteria2'):
+                auth = n.get('password') or n.get('auth', '')
+                if not auth:
+                    continue
+                base['auth'] = auth
+                base['tls'] = True
+                base['servername'] = n.get('sni', n['server'])
+                base['skip-cert-verify'] = n.get('skip-cert-verify', False)
+                if t == 'hysteria2':
+                    base['type'] = 'hysteria2'  # 明确类型
+
+            elif t == 'tuic':
+                uuid = n.get('uuid')
+                password = n.get('password', '')
+                if not uuid:
+                    continue
+                base['uuid'] = uuid
+                base['password'] = password
+                base['tls'] = True
+                base['servername'] = n.get('sni', n['server'])
+                base['skip-cert-verify'] = n.get('skip-cert-verify', False)
+
+            elif t == 'trojan':
+                password = n.get('password', '')
+                if not password:
+                    continue
+                base['password'] = password
+                base['tls'] = True
+                base['servername'] = n.get('sni', n['server'])
+                base['skip-cert-verify'] = n.get('skip-cert-verify', False)
+
+            # 其余协议可继续补充
+            proxies.append(base)
+
+        # 3. 写入 Clash 标准文件
+        clash = {'proxies': proxies}
+        with open('DYjieguo.yaml', 'w', encoding='utf-8') as f:
+            yaml.dump(clash, f, allow_unicode=True, sort_keys=False, default_flow_style=False)
+
+        print(f"已输出 {len(proxies)} 条 Clash 节点到 DYjieguo.yaml（直接导入）")
 
 def main():
     print("全协议节点提取器启动...")
