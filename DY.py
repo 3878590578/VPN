@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # DY.py - 全协议节点提取器
-# 支持：ss, ssr, vmess, vless, trojan, hysteria, hysteria2, tuic, wireguard, brook, naive, ssh, surge, loon, stash, clash
+# 输出：ss / vmess / vless / hysteria2 / tuic 单行订阅，直接导入任何客户端
 
-import base64, json, yaml, re, urllib.request, urllib.error, traceback, os, datetime
+import base64, json, yaml, os, datetime, urllib.request, urllib.error
 from typing import List, Dict
 from urllib.parse import urlparse, parse_qs, unquote
 
@@ -218,18 +218,9 @@ class UniversalExtractor:
                 ret.append(n)
         return ret
 
+    # ---------- 保存：全部转成单行订阅 ----------
     def save(self, nodes: List[Dict], file: str):
-        # 1. 保留机器可读 JSON（可选）
-        with open('DYnodes.json', 'w', encoding='utf-8') as f:
-            json.dump(nodes, f, ensure_ascii=False, indent=2)
-
-        # 2. 把 DYjieguo.txt 变成纯 Base64 订阅
-        raw_str = '\n'.join(n.get('raw', '') for n in nodes)
-        b64_bytes = base64.b64encode(raw_str.encode())
-        with open('DYjieguo.txt', 'wb') as f:
-            f.write(b64_bytes)
-
-        # 3. 人类可读列表
+        # 1. 人类可读列表（照旧）
         readable = file.replace('.txt', '_readable.txt')
         with open(readable, 'w', encoding='utf-8') as f:
             f.write(f"总计 {len(nodes)} 个节点\n")
@@ -244,6 +235,17 @@ class UniversalExtractor:
                 if 'password' in n:
                     f.write(f"   密码: {n.get('password')}\n")
 
+        # 2. 全部节点 → 原始单行链接（ss/vmess/vless/hysteria2/tuic）
+        lines = []
+        for n in nodes:
+            raw = n.get('raw', '').strip()
+            if raw and '://' in raw:           # 必须是合法协议头
+                lines.append(raw)
+        with open('DYjieguo.txt', 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines))
+
+        print(f"已输出 {len(lines)} 条单行订阅到 DYjieguo.txt（直接导入）")
+
 def main():
     print("全协议节点提取器启动...")
     extractor = UniversalExtractor()
@@ -256,12 +258,8 @@ def main():
     nodes = extractor.dedup()
     print(f"提取完成，共 {len(nodes)} 个唯一节点")
     extractor.save(nodes, 'DYjieguo.txt')
-    print("结果已保存：")
-    print("  - DYjieguo.txt （Base64 订阅，直接导入）")
-    print("  - DYnodes.json （原始 JSON，备用）")
-    print("  - DYjieguo_readable.txt （人类可读）")
 
-    # ====== 强制提交：时间戳文件保证一定有变更 ======
+    # ====== 强制提交：时间戳保证一定有变更 ======
     stamp = datetime.datetime.utcnow().isoformat()
     with open('.timestamp', 'w', encoding='utf-8') as f:
         f.write(stamp)
