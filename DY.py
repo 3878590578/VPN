@@ -219,6 +219,7 @@ class UniversalExtractor:
         return ret
 
     # ---------- 保存：全部转成单行订阅 ----------
+    # ---------- 保存：全部转成单行订阅 ----------
     def save(self, nodes: List[Dict], file: str):
         # 1. 人类可读列表（照旧）
         readable = file.replace('.txt', '_readable.txt')
@@ -238,8 +239,36 @@ class UniversalExtractor:
         # 2. 全部节点 → 原始单行链接（ss/vmess/vless/hysteria2/tuic）
         lines = []
         for n in nodes:
-            raw = n.get('raw', '').strip()
-            if raw and '://' in raw:           # 必须是合法协议头
+            t = n.get('type')
+            if t == 'ss':
+                auth = base64.b64encode(f"{n['method']}:{n['password']}".encode()).decode().rstrip('=')
+                lines.append(f"ss://{auth}@{n['server']}:{n['port']}")
+            elif t == 'vmess':
+                vm = {
+                    "v": "2", "ps": n.get('name', ''), "add": n['server'], "port": str(n['port']),
+                    "id": n['uuid'], "aid": str(n.get('aid', 0)), "net": n.get('net', 'tcp'),
+                    "type": "none", "host": "", "path": "", "tls": n.get('tls', '')
+                }
+                lines.append("vmess://" + base64.b64encode(json.dumps(vm, ensure_ascii=False).encode()).decode())
+            elif t in ('vless', 'trojan', 'hysteria', 'hysteria2', 'tuic'):
+                lines.append(n['raw'])
+            # 其余协议可按模板继续补充
+        with open('DYjieguo.txt', 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines))
+        print(f"已输出 {len(lines)} 条单行订阅到 DYjieguo.txt（直接导入）")
+
+                # 重新 base64 包装 vmess
+                vm = {
+                    "v": "2", "ps": n.get('name', ''), "add": n['server'], "port": str(n['port']),
+                    "id": n['uuid'], "aid": str(n.get('aid', 0)), "net": n.get('net', 'tcp'),
+                    "type": "none", "host": "", "path": "", "tls": n.get('tls', '')
+                }
+                lines.append("vmess://" + base64.b64encode(json.dumps(vm, ensure_ascii=False).encode()).decode())
+            elif t in ('vless', 'trojan', 'hysteria', 'hysteria2', 'tuic'):
+                # 直接复用原始链接
+                lines.append(n['raw'])
+            # 其余协议同理
+        # 必须是合法协议头
                 lines.append(raw)
         with open('DYjieguo.txt', 'w', encoding='utf-8') as f:
             f.write('\n'.join(lines))
