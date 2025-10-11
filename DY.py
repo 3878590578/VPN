@@ -240,7 +240,11 @@ class UniversalExtractor:
         for n in nodes:
             t = n.get('type')
             if t == 'ss':
-                auth = base64.b64encode(f"{n['method']}:{n['password']}".encode()).decode().rstrip('=')
+                method = n.get('method')
+                password = n.get('password')
+                if not method or not password:
+                    continue
+                auth = base64.b64encode(f"{method}:{password}".encode()).decode().rstrip('=')
                 lines.append(f"ss://{auth}@{n['server']}:{n['port']}")
             elif t == 'vmess':
                 vm = {
@@ -250,8 +254,9 @@ class UniversalExtractor:
                 }
                 lines.append("vmess://" + base64.b64encode(json.dumps(vm, ensure_ascii=False).encode()).decode())
             elif t in ('vless', 'trojan', 'hysteria', 'hysteria2', 'tuic'):
-                lines.append(n['raw'])
+                lines.append(n.get('raw', ''))
             # 其余协议可按模板继续补充
+
         with open('DYjieguo.txt', 'w', encoding='utf-8') as f:
             f.write('\n'.join(lines))
         print(f"已输出 {len(lines)} 条单行订阅到 DYjieguo.txt（直接导入）")
