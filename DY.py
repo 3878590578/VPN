@@ -254,6 +254,17 @@ def main():
     print(f"提取完成，共 {len(nodes)} 个唯一节点")
     extractor.save(nodes, 'DYjieguo.txt')
     print("结果已保存到 DYjieguo.txt 和 DYjieguo_readable.txt")
+		    # ====== 新增：额外输出 Base64 订阅 ======
+    import base64
+    with open('DYjieguo.txt', 'r', encoding='utf-8') as f:
+        nodes = json.load(f)
+    # 用节点原始字符串拼成完整配置再 Base64
+    raw_str = '\n'.join(n.get('raw', '') for n in nodes)
+    b64_str = base64.b64encode(raw_str.encode()).decode()
+    with open('DYbase64.txt', 'w', encoding='utf-8') as f:
+        f.write(b64_str)
+    print('已生成 Base64 订阅文件：DYbase64.txt')
+
 
 if __name__ == '__main__':
     main()
