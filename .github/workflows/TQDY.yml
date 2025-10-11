@@ -17,10 +17,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
     
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v4
       with:
         python-version: '3.9'
     
@@ -34,7 +34,7 @@ jobs:
         python DY.py
         
     - name: Upload results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: extracted-nodes
         path: |
@@ -43,9 +43,9 @@ jobs:
         retention-days: 30
         
     - name: Commit results
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add DYjieguo.txt DYjieguo_readable.txt
-        git diff --quiet && git diff --staged --quiet || git commit -m "Update extracted nodes [$(date +'%Y-%m-%d %H:%M:%S')]"
-        git push
+  run: |
+    git config --local user.email "action@github.com"
+    git config --local user.name "GitHub Action"
+    git add DYjieguo.txt DYjieguo_readable.txt .timestamp
+    git diff --cached --quiet || git commit -m "Update nodes $(date '+%F %T')"
+    git push
