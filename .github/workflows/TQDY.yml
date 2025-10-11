@@ -35,7 +35,7 @@ jobs:
       with:
         name: extracted-nodes
         path: |
-          DYjieguo.txt
+          DYjieguo.yaml
           DYjieguo_readable.txt
         retention-days: 30
 
@@ -43,6 +43,6 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add DYjieguo.txt DYjieguo_readable.txt .timestamp
+        git add DYjieguo.yaml DYjieguo_readable.txt .timestamp
         git diff --cached --quiet || git commit -m "Update nodes $(date '+%F %T')"
         git push
